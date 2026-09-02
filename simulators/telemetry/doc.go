@@ -1,3 +1,4 @@
-package telemetrysim
+package telemetry
 
-// Package telemetrysim defines the ORBITA telemetrysim subsystem boundary.
+// Package telemetry provides deterministic telemetry-generation primitives
+// for exercising ORBITA ingestion and processing pipelines.

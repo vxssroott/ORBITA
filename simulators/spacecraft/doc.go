@@ -1,3 +1,5 @@
-package spacecraftsim
+package spacecraft
 
-// Package spacecraftsim defines the ORBITA spacecraftsim subsystem boundary.
+// Package spacecraft provides deterministic spacecraft simulation primitives
+// for exercising the ORBITA telemetry and operational pipeline without
+// connecting to real spacecraft.
