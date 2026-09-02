@@ -2,88 +2,97 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/vxssroott/ORBITA/internal/events"
-	"github.com/vxssroott/ORBITA/internal/rules"
-	"github.com/vxssroott/ORBITA/internal/state"
-	"github.com/vxssroott/ORBITA/internal/telemetry"
+	"github.com/vxssroott/ORBITA/internal/config"
 	"github.com/vxssroott/ORBITA/services/api"
 )
 
-const version = "0.2.0-dev"
-
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-
-	logger.Info(
-		"starting ORBITA",
-		"version", version,
-		"service", "orbita-core",
-	)
-
-	telemetryStore := telemetry.NewStore()
-	stateEngine := state.NewEngine()
-	eventEngine := events.NewEngine()
-
-	_ = eventEngine
-
-	ruleEngine := rules.NewEngine(nil)
-	_ = ruleEngine
-
-	apiServer := api.NewServer(
-		telemetryStore,
-		stateEngine,
-	)
-
-	httpServer := &http.Server{
-		Addr:              "127.0.0.1:8080",
-		Handler:           apiServer.Handler(),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       60 * time.Second,
+	cfg, err := config.Load()
+	if err != nil {
+		slog.Error("configuration failed", "error", err)
+		os.Exit(1)
 	}
 
-	go func() {
-		logger.Info("API listening", "address", httpServer.Addr)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: parseLogLevel(cfg.LogLevel),
+	}))
 
-		if err := httpServer.ListenAndServe(); err != nil &&
-			err != http.ErrServerClosed {
-			logger.Error("API server stopped", "error", err)
-			os.Exit(1)
-		}
-	}()
+	slog.SetDefault(logger)
 
-	ctx, stop := signal.NotifyContext(
-		context.Background(),
-		os.Interrupt,
-		syscall.SIGTERM,
-	)
+	server := &http.Server{
+		Addr:              cfg.HTTPAddr,
+		Handler:           api.NewServer(cfg.MaxRequestBodyBytes).Handler(),
+		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		ReadTimeout:       cfg.ReadTimeout,
+		WriteTimeout:      cfg.WriteTimeout,
+		IdleTimeout:       cfg.IdleTimeout,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	<-ctx.Done()
+	serverErr := make(chan error, 1)
 
-	logger.Info("shutdown signal received")
+	go func() {
+		logger.Info(
+			"ORBITA API server starting",
+			"addr", cfg.HTTPAddr,
+			"environment", cfg.Environment,
+		)
+
+		err := server.ListenAndServe()
+
+		if !errors.Is(err, http.ErrServerClosed) {
+			serverErr <- err
+			return
+		}
+
+		serverErr <- nil
+	}()
+
+	select {
+	case <-ctx.Done():
+		logger.Info("shutdown signal received")
+
+	case err := <-serverErr:
+		if err != nil {
+			logger.Error("server failed", "error", err)
+			os.Exit(1)
+		}
+
+		return
+	}
 
 	shutdownCtx, cancel := context.WithTimeout(
 		context.Background(),
-		10*time.Second,
+		cfg.ShutdownTimeout,
 	)
 	defer cancel()
 
-	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("graceful shutdown failed", "error", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("ORBITA shutdown complete")
+	logger.Info("ORBITA API server stopped")
+}
+
+func parseLogLevel(value string) slog.Level {
+	switch value {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

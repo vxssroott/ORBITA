@@ -1,22 +1,43 @@
 package state
 
-type Health string
+import (
+	"fmt"
+	"math"
 
-const (
-	HealthUnknown  Health = "unknown"
-	HealthNominal  Health = "nominal"
-	HealthDegraded Health = "degraded"
-	HealthCritical Health = "critical"
+	"github.com/vxssroott/ORBITA/pkg/protocol"
 )
 
-func CalculateHealth(parameters map[string]float64) Health {
+const (
+	HealthUnknown  = "unknown"
+	HealthNominal  = "nominal"
+	HealthDegraded = "degraded"
+	HealthWarning  = "warning"
+	HealthCritical = "critical"
+)
+
+func CalculateHealth(values map[string]float64) string {
+	if len(values) == 0 {
+		return HealthUnknown
+	}
+
 	health := HealthNominal
 
-	for key, value := range parameters {
+	for key, value := range values {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return HealthCritical
+		}
+
 		switch key {
 		case "battery_voltage":
 			if value < 20 {
 				return HealthCritical
+			}
+
+		case "battery":
+			if value < 15 {
+				if health == HealthNominal {
+					health = HealthWarning
+				}
 			}
 
 		case "temperature":
@@ -24,12 +45,42 @@ func CalculateHealth(parameters map[string]float64) Health {
 				return HealthCritical
 			}
 
+			if value > 70 || value < -10 {
+				if health == HealthNominal {
+					health = HealthWarning
+				}
+			}
+
 		case "signal_strength":
 			if value < 20 {
-				health = HealthDegraded
+				if health == HealthNominal {
+					health = HealthDegraded
+				}
 			}
 		}
 	}
 
 	return health
+}
+
+func ValidateState(state protocol.SpacecraftState) error {
+	if state.SpacecraftID == "" {
+		return fmt.Errorf("spacecraft ID is required")
+	}
+
+	if state.UpdatedAt.IsZero() {
+		return fmt.Errorf("state update time is required")
+	}
+
+	if state.Parameters == nil {
+		return fmt.Errorf("state parameters are required")
+	}
+
+	switch state.Health {
+	case HealthUnknown, HealthNominal, HealthDegraded, HealthWarning, HealthCritical:
+	default:
+		return fmt.Errorf("invalid spacecraft health %q", state.Health)
+	}
+
+	return nil
 }

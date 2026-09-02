@@ -6,24 +6,21 @@ import (
 	"time"
 
 	"github.com/vxssroott/ORBITA/internal/security"
-	"github.com/vxssroott/ORBITA/internal/state"
-	"github.com/vxssroott/ORBITA/internal/telemetry"
 )
 
 type Server struct {
-	telemetry *telemetry.Store
-	state     *state.Engine
-	mux       *http.ServeMux
+	mux     *http.ServeMux
+	maxBody int64
 }
 
-func NewServer(
-	telemetryStore *telemetry.Store,
-	stateEngine *state.Engine,
-) *Server {
+func NewServer(maxBody int64) *Server {
+	if maxBody <= 0 {
+		maxBody = 1 << 20
+	}
+
 	s := &Server{
-		telemetry: telemetryStore,
-		state:     stateEngine,
-		mux:       http.NewServeMux(),
+		mux:     http.NewServeMux(),
+		maxBody: maxBody,
 	}
 
 	s.routes()
@@ -32,79 +29,59 @@ func NewServer(
 }
 
 func (s *Server) routes() {
-	s.mux.HandleFunc("/health", s.health)
-	s.mux.HandleFunc("/ready", s.ready)
-	s.mux.HandleFunc("/v1/spacecraft/state", s.spacecraftState)
-	s.mux.HandleFunc("/v1/spacecraft/telemetry", s.spacecraftTelemetry)
+	s.mux.HandleFunc("/healthz", s.health)
+	s.mux.HandleFunc("/readyz", s.ready)
+	s.mux.HandleFunc("/v1/status", s.status)
 }
 
 func (s *Server) Handler() http.Handler {
-	return security.SecurityHeaders(s.mux)
+	return security.RequestID(
+		security.SecurityHeaders(
+			http.MaxBytesHandler(s.mux, s.maxBody),
+		),
+	)
 }
 
-func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{
-		"status":    "ok",
-		"timestamp": time.Now().UTC(),
-		"service":   "orbita-api",
+func (s *Server) health(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"status": "ok",
 	})
 }
 
-func (s *Server) ready(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	writeJSON(w, http.StatusOK, map[string]string{
 		"status": "ready",
 	})
 }
 
-func (s *Server) spacecraftState(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-
-	if err := security.ValidateIdentifier(id); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "valid spacecraft id is required",
-		})
+func (s *Server) status(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	value, ok := s.state.Get(id)
-
-	if !ok {
-		writeJSON(w, http.StatusNotFound, map[string]string{
-			"error": "spacecraft state not found",
-		})
-		return
-	}
-
-	writeJSON(w, http.StatusOK, value)
-}
-
-func (s *Server) spacecraftTelemetry(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-
-	if err := security.ValidateIdentifier(id); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "valid spacecraft id is required",
-		})
-		return
-	}
-
-	value, ok := s.telemetry.Latest(id)
-
-	if !ok {
-		writeJSON(w, http.StatusNotFound, map[string]string{
-			"error": "telemetry not found",
-		})
-		return
-	}
-
-	writeJSON(w, http.StatusOK, value)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"service":    "orbita-api",
+		"status":     "operational",
+		"version":    "v1",
+		"request_id": security.GetRequestID(r.Context()),
+		"timestamp":  time.Now().UTC(),
+	})
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	if err := json.NewEncoder(w).Encode(value); err != nil {
-		return
-	}
+	_ = json.NewEncoder(w).Encode(value)
 }

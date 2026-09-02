@@ -59,7 +59,7 @@ func (e *Engine) Apply(envelope protocol.TelemetryEnvelope) (protocol.Spacecraft
 		}
 	}
 
-	state.Health = deriveHealth(state.Parameters)
+	state.Health = CalculateHealth(state.Parameters)
 
 	e.states[envelope.SpacecraftID] = state
 
@@ -72,27 +72,6 @@ func (e *Engine) Get(spacecraftID string) (protocol.SpacecraftState, bool) {
 
 	state, ok := e.states[spacecraftID]
 	return state, ok
-}
-
-func deriveHealth(parameters map[string]float64) string {
-	for key, value := range parameters {
-		switch key {
-		case "battery_voltage":
-			if value < 20 {
-				return "critical"
-			}
-		case "temperature":
-			if value > 80 || value < -20 {
-				return "critical"
-			}
-		case "signal_strength":
-			if value < 20 {
-				return "degraded"
-			}
-		}
-	}
-
-	return "nominal"
 }
 
 func IsStateCurrent(state protocol.SpacecraftState, maxAge time.Duration, now time.Time) bool {
