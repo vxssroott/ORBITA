@@ -1,3 +1,3 @@
-﻿module github.com/vxssroott/ORBITA
+module github.com/vxssroott/ORBITA
 
 go 1.25

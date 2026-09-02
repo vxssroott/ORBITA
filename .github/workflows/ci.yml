@@ -1,4 +1,4 @@
-﻿name: ORBITA CI
+name: ORBITA CI
 
 on:
   push:

@@ -1,4 +1,4 @@
-﻿# ORBITA
+# ORBITA
 
 ORBITA is a sovereign, vendor-neutral satellite operations and intelligence platform that gives Nigeria independent control over its satellite data, telemetry, operational intelligence, and command interfaces.
 

@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://orbita.sovereign/schemas/spacecraft/v1/spacecraft.json",
   "title": "ORBITA Spacecraft Descriptor",

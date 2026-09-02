@@ -1,4 +1,4 @@
-﻿# Simulation Strategy
+# Simulation Strategy
 
 Initial development and validation use simulated infrastructure.
 

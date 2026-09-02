@@ -1,4 +1,4 @@
-﻿# Security Architecture
+# Security Architecture
 
 ORBITA security domains include:
 

@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://orbita.sovereign/schemas/events/v1/event.json",
   "title": "ORBITA Operational Event",

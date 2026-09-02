@@ -1,4 +1,4 @@
-﻿# Protocol Strategy
+# Protocol Strategy
 
 All external systems integrate through explicit vendor-neutral contracts.
 

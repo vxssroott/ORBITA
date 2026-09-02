@@ -1,4 +1,4 @@
-﻿# Security Policy
+# Security Policy
 
 ORBITA is intended for sovereign and safety-critical infrastructure.
 

@@ -1,4 +1,4 @@
-﻿# Contributing
+# Contributing
 
 ORBITA development must preserve:
 
