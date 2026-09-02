@@ -1,0 +1,48 @@
+﻿# Binaries
+/bin/
+/dist/
+/build/
+/out/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Coverage
+coverage/
+*.coverprofile
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Secrets
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Runtime
+tmp/
+runtime/
+data/
+logs/
+*.log
+
+# Generated
+generated/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

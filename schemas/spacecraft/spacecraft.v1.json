@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orbita.sovereign/schemas/spacecraft/v1/spacecraft.json",
+  "title": "ORBITA Spacecraft Descriptor",
+  "type": "object",
+  "required": [
+    "spacecraft_id",
+    "platform",
+    "version"
+  ],
+  "properties": {
+    "spacecraft_id": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

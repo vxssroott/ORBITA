@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orbita.sovereign/schemas/commands/v1/command.json",
+  "title": "ORBITA Command Envelope",
+  "type": "object",
+  "required": [
+    "command_id",
+    "spacecraft_id",
+    "command_type"
+  ],
+  "properties": {
+    "command_id": {
+      "type": "string"
+    },
+    "spacecraft_id": {
+      "type": "string"
+    },
+    "command_type": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

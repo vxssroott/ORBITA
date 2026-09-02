@@ -1,0 +1,29 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orbita.sovereign/schemas/telemetry/v1/telemetry-envelope.json",
+  "title": "ORBITA Telemetry Envelope",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "spacecraft_id",
+    "timestamp",
+    "parameters"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "spacecraft_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parameters": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}
